@@ -1,0 +1,15 @@
+- name: Deploy VPCs 
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  tasks:
+  - name: Production VPC
+    include: includes/create_vpc.yml
+    vars:
+      env: production
+      subnet: 192.168.0.0/18
+  - name: Development VPC
+    include: includes/create_vpc.yml
+    vars:
+      env: development
+      subnet: 192.168.64.0/18

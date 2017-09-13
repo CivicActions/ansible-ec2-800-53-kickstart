@@ -1,0 +1,2 @@
+# Allow the admin group
+%admin        ALL=(ALL)       ALL

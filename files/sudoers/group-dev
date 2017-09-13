@@ -1,0 +1,6 @@
+# Allow the dev group to switch to the webdev user
+%dev        ALL=(webdev)       ALL
+Defaults:%dev !requiretty
+%dev        ALL=(webdev)       NOPASSWD: /usr/bin/rsync
+%dev        ALL=(root)         NOPASSWD: /usr/local/bin/fixwebperms.sh
+webdev      ALL=(root)         NOPASSWD: /usr/local/bin/fixwebperms.sh

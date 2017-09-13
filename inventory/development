@@ -1,0 +1,4 @@
+# Instance names should match names in ec2.py dynamic inventory.
+# NOTE: Use underscores instead of hyphens in instance names.
+
+[development]

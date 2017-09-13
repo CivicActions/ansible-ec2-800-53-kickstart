@@ -1,0 +1,12 @@
+---
+- name: Configure web servers
+  hosts: webservers
+  become: false
+  gather_facts: false
+  tasks:
+    - name: Attach security groups
+      include: includes/attach_security_group.yml
+      vars:
+        security_groups:
+          - "production_web"
+          - "production_ssh_whitelist"

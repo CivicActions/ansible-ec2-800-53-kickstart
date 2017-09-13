@@ -1,0 +1,41 @@
+# General whitelists for all servers.
+# Add office, VPN etc IPs/subnets here.
+ips:
+
+# Example Org VPN
+#- org_vpn:
+#  ip: "1.2.3.4/32"
+#  org: "Org"
+
+# System groups on all (Ansible managed) servers.
+account_groups:
+- name: admin
+  system: yes
+  state: present
+- name: dev
+  system: yes
+  state: present
+
+# These accounts are added on both prod and dev servers.
+account_users: 
+- name: webdev
+  comment: "Web Developer Service Account"
+  createhome: yes
+  groups: dev
+  service_account: yes
+  # TODO: Add deploy keys here.
+
+# Example admin user
+#- name: username
+#  ip: "1.2.3.4/32"
+#  comment: "First Last, Org"
+#  createhome: yes
+#  groups: admin,dev
+#  password: 'HASH'
+#  update_password: on_create
+#  authorized_keys:
+#  - key: 'ssh-rsa key user@system'
+#    state: present
+
+# These accounts are only added on dev servers
+developer_users: 

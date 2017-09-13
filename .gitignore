@@ -1,0 +1,5 @@
+*.retry
+.vault_pass.txt
+env.local
+*.log
+roles/*

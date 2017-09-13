@@ -1,0 +1,17 @@
+---
+# Variables used only for deployment
+image: ami-2051294a
+instance_type: m4.xlarge
+filesystem: xfs
+root: 10
+home: 10
+var: 100
+varlog: 4
+varlogaudit: 2
+tmp: 4
+free: 10
+private_ip: 192.168.0.1
+# Variables used only for AWS configuration
+#public_ip: 
+# Post deployment options
+harden: 1
