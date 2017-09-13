@@ -20,7 +20,7 @@
       gather_subset: hardware
     when: ec2_id is defined
   roles:
-  - role: ansible-ec2-800-53
+  - role: CivicActions.ec2-800-53
     key_name: "{{ lookup('env', 'AWS_SSH_KEY_ID') }}"
     tenancy: "default"
     ansible_user: "ec2-user"
