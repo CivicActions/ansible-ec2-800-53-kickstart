@@ -7,7 +7,7 @@ RUN curl -O https://bootstrap.pypa.io/get-pip.py
 RUN python get-pip.py
 
 # Install ansible with pip.
-RUN pip install ansible ansible-lint awscli boto boto3
+RUN pip install ansible ansible-lint awscli boto boto3 passlib
 
 RUN mkdir -p /opt/ansible
 WORKDIR /opt/ansible
