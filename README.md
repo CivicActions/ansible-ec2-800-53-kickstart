@@ -25,6 +25,7 @@ aws_access_key_id = ACCESS_KEY
 ### Initial setup
 
 The following only needs to be done once upon creation of the project:
+* Create an AWS account - one account for each major client/project is a good practice. The account should be owned by an e-mail alias, not a personal e-mail.
 * Set up an IAM group for admin users, create accounts and share account credentials.
 * Update the env.list file with the following:
  * The project name (in lowercase) to match the group name that will be referenced in users  `$HOME/.aws/credentials` files (replace PROJECT below).
@@ -36,6 +37,13 @@ AWS_PROFILE=PROJECT
 AWS_REGION=REGION
 EC2_REGION=REGION
 ```
+* Deploy the initial VPC configuration by running: ansible-playbook vpc.yml
+* Add the subnet ID and an SSH security your ID for each VPC to the production.yml and development.yml files in inventory/group_vars/. These are used by site.yml for initial instance deployment (TODO: determine these dynamically).
+* Add IP whitelist and user account information for yourself and your team to inventory/group_vars/all.yml. To create password hashes you can run `passlib`.
+* Check the AMI ID to use (CentOS or RHEL, but must be for the correct region) in inventory/host_vars/prodweb.yml
+* Allocate a new elastic IP (TODO: make this automatic if not defined) and add it as the public_id in inventory/host_vars/prodweb.yml
+* If needed, go to https://aws.amazon.com/marketplace/ and accept the terms/license for the AMI you are using.
+* Deploy the initial host by running: ANSIBLE_HOST_KEY_CHECKING=false ansible-playbook site.yml
 
 ## Usage
 
