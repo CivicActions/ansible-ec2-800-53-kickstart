@@ -80,6 +80,7 @@
         private_ip_address: "{{ interface.network_interfaces[0].private_ip_address }}"
         public_ip: "{{ public_ip }}"
         reuse_existing_ip_allowed: true
+        in_vpc: true
         state: present
       # Check interface is defined so we don't break in check mode.
       when: interface.network_interfaces[0] is defined
