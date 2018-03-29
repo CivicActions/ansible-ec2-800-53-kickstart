@@ -5,28 +5,30 @@
   gather_facts: false
   tags: ['slow']
   pre_tasks:
-  - name: Check if ec2-user username is active
-    local_action: shell ssh -o StrictHostKeyChecking=no -o KbdInteractiveAuthentication=no -o PreferredAuthentications=gssapi-with-mic,gssapi-keyex,hostbased,publickey -o PasswordAuthentication=no -o ConnectTimeout=10 ec2-user@{{ ansible_ssh_host }} "echo success"
+  - name: Get VPC and Networking facts
+    connection: local
+    import_tasks: includes/net_facts.yml
+    vars:
+      envgroup: "{{ env }}"
+  - name: Check if username is active
+    local_action: shell ssh -o StrictHostKeyChecking=no -o KbdInteractiveAuthentication=no -o PreferredAuthentications=gssapi-with-mic,gssapi-keyex,hostbased,publickey -o PasswordAuthentication=no -o ConnectTimeout=10 {{ ami_user }}@{{ public_ip }} "echo success"
     ignore_errors: true
     register: ec2user
-  - name: Set host username to ec2-user if it is active
+  - name: Set host username if it is active
     add_host:
       hostname: "{{ item }}"
-      ansible_user: "ec2-user"
+      ansible_user: "{{ ami_user }}"
     when: hostvars[item]['ec2user']['stdout'] == "success"
     with_items: "{{ ansible_play_hosts }}"
-  - name: Gathering hardware facts (if deployed)
-    setup:
-      gather_subset: hardware
-    when: ec2_id is defined
   roles:
   - role: CivicActions.ec2-800-53
     key_name: "{{ lookup('env', 'AWS_SSH_KEY_ID') }}"
     tenancy: "default"
-    ansible_user: "ec2-user"
+    ansible_user: "{{ ami_user }}"
   tasks:
   - name: Refresh inventory
     meta: refresh_inventory
+
 - name: Configure AWS and ensure everything is correctly tagged
   hosts: production,development
   become: true
@@ -50,7 +52,7 @@
         resource: "{{ item.id }}"
         tags:
           Name: "{{ inventory_hostname }} {{ item.attachment_set.device }}"
-          Environment: "{{ environment }}"
+          Environment: "{{ env }}"
       with_items: "{{ volumes.volumes }}"
       delegate_to: localhost
     - name: Fetch primary network interface ID
@@ -65,7 +67,7 @@
         resource: "{{ interface.network_interfaces[0].network_interface_id }}"
         tags:
           Name: "{{ inventory_hostname }}_primary_interface"
-          Environment: "{{ environment }}"
+          Environment: "{{ env }}"
       # Check interface is defined so we don't break in check mode.
       when: interface.network_interfaces[0] is defined
       delegate_to: localhost
@@ -87,7 +89,7 @@
       register: eip
       delegate_to: localhost
     - name: Manage secondary IPs (if needed)
-      include: includes/secondary_ips.yml
+      import_tasks: includes/secondary_ips.yml
       when: secondary_ips is defined
     - name: Wait for public IP to come up
       wait_for: host={{ public_ip }} port=22 delay=1 timeout=640 search_regex=OpenSSH
@@ -95,53 +97,43 @@
       delegate_to: localhost
     - name: Refresh inventory
       meta: refresh_inventory
+
 - name: Run general roles and tasks on fully Ansible managed servers
   hosts: full_ansible
+  gather_facts: false
   become: true
-  gather_facts: true
-  remote_user: ec2-user
-  vars:
-    run_scap: true
-    scap_profile:
-      - stig-rhel{{ ansible_distribution_major_version }}-server-upstream
-    scap_reports_dir: ~/scap_reports
+  pre_tasks:
   roles:
-  - role: rhtps.800-53
-    tags: ['slow']
   - role: dochang.account
+    ansible_user: "{{ ami_user }}"
+  - role: CivicActions.ec2-800-53-remediate
+    ansible_user: "{{ ami_user }}"
   tasks:
   - name: Set hostname
+    remote_user: "{{ ami_user }}"
     hostname:
       name: "{{ inventory_hostname }}"
   - name: Add admins sudoers rules
+    remote_user: "{{ ami_user }}"
     copy:
       src: files/sudoers/group-admin
       dest: /etc/sudoers.d/group-admin
-      validate: 'visudo -cf %s'      
+      validate: 'visudo -cf %s'
   - name: Add developers sudoers rules
     copy:
       src: files/sudoers/group-dev
       dest: /etc/sudoers.d/group-dev
-      validate: 'visudo -cf %s'      
+      validate: 'visudo -cf %s'
   - name: Add openscap user sudoers rules
     copy:
       src: files/sudoers/oscap-user
       dest: /etc/sudoers.d/oscap-user
       validate: 'visudo -cf %s'
-  - name: Force password change for users who have never logged in
-    shell: 'if [[ "$(last {{ item.name }} | wc -l)" == "2" ]]; then chage -d 0 {{ item.name }}; fi'
-    when: item.service_account is undefined
-    with_items: "{{ account_users }}"
+
 - name: Run general roles and tasks on fully Ansible managed development servers only
   hosts: development:&full_ansible
   become: true
-  gather_facts: true
-  remote_user: ec2-user
+  gather_facts: false
   roles:
   - role: dochang.account
     account_users: "{{ developer_users }}"
-  tasks:
-  - name: Force password change for users who have never logged in
-    shell: 'if [[ "$(last {{ item.name }} | wc -l)" == "2" ]]; then chage -d 0 {{ item.name }}; fi'
-    when: item.service_account is undefined
-    with_items: "{{ developer_users }}"

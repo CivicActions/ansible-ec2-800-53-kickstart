@@ -1,12 +1,15 @@
 - name: "{{ env }} VPC"
   ec2_vpc:
     state: present
-    cidr_block: "{{ subnet }}"
+    cidr_block: "{{ cidr }}"
     resource_tags: { "Name":"{{ env }}_vpc", "Environment":"{{ env }}" }
     subnets:
-      - cidr: "{{ subnet }}"
-        az: us-east-1c
+      - cidr: "{{ subnet.cidr }}"
+        az: "{{ subnet.az }}"
         resource_tags: { "Name":"{{ env }}_subnet", "Environment":"{{ env }}" }
+      - cidr: "{{ subnet_alt1.cidr }}"
+        az: "{{ subnet_alt1.az }}"
+        resource_tags: { "Name":"{{ env }}_subnet_alt1", "Environment":"{{ env }}" }
     internet_gateway: yes
     wait: yes
   register: vpc
@@ -66,13 +69,13 @@
   when: item.ip is defined
   with_items: "{{ account_users + ips }}"
 - name: Add SSH IP whitelist security group
-  include: includes/create_security_group.yml
+  import_tasks: includes/create_security_group.yml
   vars:
     name: "{{ env }}_ssh_whitelist"
-    description: Permits inbound SSH to instance from trusted IPs 
+    description: Permits inbound SSH to instance from trusted IPs
     vpc_id: "{{ vpc.vpc_id }}"
     rules: "{{ ssh_ingress }}"
- 
+
 - name: Empty https whitelisted ingress rules access table
   set_fact:
     https_ingress: "{{ [] }}"
@@ -82,18 +85,18 @@
   when: item.ip is defined
   with_items: "{{ account_users + ips }}"
 - name: Add https IP whitelist security group
-  include: includes/create_security_group.yml
+  import_tasks: includes/create_security_group.yml
   vars:
     name: "{{ env }}_https_whitelist"
-    description: Permits inbound https to instance from trusted IPs 
+    description: Permits inbound https to instance from trusted IPs
     vpc_id: "{{ vpc.vpc_id }}"
     rules: "{{ https_ingress }}"
 
 - name: Add web server security group
-  include: includes/create_security_group.yml
+  import_tasks: includes/create_security_group.yml
   vars:
     name: "{{ env }}_web"
-    description: Permits inbound http and https traffic 
+    description: Permits inbound http and https traffic
     vpc_id: "{{ vpc.vpc_id }}"
     rules:
     - proto: tcp
@@ -106,7 +109,7 @@
       cidr_ip: 0.0.0.0/0
 
 - name: Add SSH security group (dev only)
-  include: includes/create_security_group.yml
+  import_tasks: includes/create_security_group.yml
   vars:
     name: "{{ env }}_ssh"
     description: Permits inbound SSH to instance
